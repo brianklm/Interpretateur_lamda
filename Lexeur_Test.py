@@ -1,5 +1,5 @@
 from pprint import pprint
-from interpreteur_lambda import lexeur
+from interpreteur_lambda import lexeur, ErreurLexicale
 
 TEST = [
     "/x.y x",
@@ -7,6 +7,7 @@ TEST = [
     "(/x.x x) (/x.x x)",
     ")/xt.",
     "/x.x+2",
+    "y2 *"
 ]
 
 if __name__ == "__main__":
@@ -15,5 +16,5 @@ if __name__ == "__main__":
         print("Terme :", repr(terme))
         try:
             pprint(lexeur(terme))
-        except ValueError:
-            print("Erreur de syntaxe")
+        except ErreurLexicale as e:
+            print(e)
