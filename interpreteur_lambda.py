@@ -1,11 +1,13 @@
 import sys
 from pprint import pprint
 
+### PARTIE 1 : LEXEUR ET PARSEUR
+
 LAMBDA = 'LAMBDA'
 POINT = 'POINT'
 ESPACE = 'ESPACE'
-PARENO = 'PARENO'
-PARENF = 'PARENF'
+PARO = 'PARO'
+PARF = 'PARF'
 VAR = 'VAR'
 
 
@@ -31,10 +33,10 @@ def lexeur(s):
             tokens.append((c, ESPACE))
             i += 1
         elif c == '(':
-            tokens.append((c, PARENO))
+            tokens.append((c, PARO))
             i += 1
         elif c == ')':
-            tokens.append((c, PARENF))
+            tokens.append((c, PARF))
             i += 1
         elif est_alphanum(c):
             j = i
@@ -43,7 +45,8 @@ def lexeur(s):
             tokens.append((s[i:j], VAR))
             i = j
         else:
-            raise ValueError(f"Caractère invalide {c!r} à la position {i}")
+            affiche = c if c.isprintable() else repr(c)
+            raise ErreurLexicale(f"Erreur lexicale sur le ({affiche})")
     return tokens
 
 
@@ -56,6 +59,8 @@ def enlever_guillemets(s):
 class ErreurSyntaxe(Exception):
     pass
 
+class ErreurLexicale(Exception):
+    pass
 
 # Arbre de syntaxe abstraite :
 #   ('variable', nom)
@@ -78,13 +83,25 @@ def _type_a(a, i):
     return a[i][1] if i < len(a) else None
 
 
-def _attendre(a, i, type_attendu):
+def _erreur(a, i, attendu):
+    """Construit l'erreur de syntaxe pour le token i."""
+
+    if i >= len(a):
+        lieu = "à la fin du terme"
+    else:
+        texte, genre = a[i]
+        if genre == ESPACE:
+            lieu = "sur l'espace"
+        elif genre == VAR:
+            lieu = f"sur la variable {texte}"
+        else:
+            lieu = f"sur le {texte}"
+    return ErreurSyntaxe(f"Erreur de syntaxe {lieu}")
+
+def _attendre(a, i, type_attendu, message):
     """Vérifie que le token i est du type attendu, et retourne i+1."""
-    t = _type_a(a, i)
-    if t != type_attendu:
-        trouve = "fin du terme" if t is None else f"{a[i][0]!r} ({t})"
-        raise ErreurSyntaxe(
-            f"{type_attendu} attendu au token {i}, trouvé : {trouve}")
+    if _type_a(a, i) != type_attendu:
+        raise _erreur(a, i, message)
     return i + 1
 
 
@@ -92,7 +109,7 @@ def _attendre(a, i, type_attendu):
 #   terme       ::= abstraction | application
 #   abstraction ::= LAMBDA VAR POINT terme
 #   application ::= atome (ESPACE atome)* [ESPACE abstraction]
-#   atome       ::= VAR | PARENO terme PARENF
+#   atome       ::= VAR | PARO terme PARF
 def analyser_terme(a, i):
     if _type_a(a, i) == LAMBDA:
         return analyser_abstraction(a, i)
@@ -100,11 +117,11 @@ def analyser_terme(a, i):
 
 
 def analyser_abstraction(a, i):
-    i = _attendre(a, i, LAMBDA)
-    if _type_a(a, i) != VAR:
-        raise ErreurSyntaxe(f"VAR attendu après '/' au token {i}")
-    nom = a[i][0]
-    i = _attendre(a, i + 1, POINT)
+    i = _attendre(a, i, LAMBDA, "'/' attendu")
+    i_var = i
+    i = _attendre(a, i, VAR, "variable attendue après '/'")
+    nom = a[i_var][0]
+    i = _attendre(a, i, POINT, "'.' attendu")
     # RÈGLE 2 : le corps est un terme complet, il consomme tous les
     # tokens possibles (jusqu'à un ')' ou la fin) : "le plus loin possible"
     corps, i = analyser_terme(a, i)
@@ -128,24 +145,23 @@ def analyser_atome(a, i):
     t = _type_a(a, i)
     if t == VAR:
         return variable(a[i][0]), i + 1
-    if t == PARENO:
+    if t == PARO:
         interieur, i = analyser_terme(a, i + 1)
-        i = _attendre(a, i, PARENF)
+        i = _attendre(a, i, PARF, "')' attendu")
         return interieur, i
-    trouve = "fin du terme" if t is None else f"{a[i][0]!r} ({t})"
-    raise ErreurSyntaxe(
-        f"variable ou '(' attendu au token {i}, trouvé : {trouve}")
+    raise _erreur(a, i, "variable ou '(' attendu")
 
 
 def parseur(a):
     """Prend la liste de tokens du lexeur, retourne l'arbre de syntaxe.
-    Lève ErreurSyntaxe si le terme est mal formé."""
+    Lève ErreurSyntaxe (avec la position) si le terme est mal formé."""
     if not a:
-        raise ErreurSyntaxe("terme vide")
+        raise ErreurSyntaxe("Erreur de syntaxe : terme vide")
     arbre, i = analyser_terme(a, 0)
     if i != len(a):
-        raise ErreurSyntaxe(
-            f"token inattendu {a[i][0]!r} ({a[i][1]}) au token {i}")
+        if a[i][1] == PARF:
+            raise _erreur(a, i, "parenthèse ouvrante manquante")
+        raise _erreur(a, i, "espace attendu")
     return arbre
 
 
@@ -341,9 +357,8 @@ def traiter(s):
         a = parseur(tokens)
         print("Terme :", parenthese(a))
         affichage(a)
-    except (ValueError, ErreurSyntaxe):
-        print("Erreur de syntaxe")
-
+    except (ErreurLexicale, ErreurSyntaxe) as e:
+        print(e)
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         traiter(sys.argv[1])
@@ -354,3 +369,5 @@ if __name__ == "__main__":
             if saisie == "":
                 break
             traiter(enlever_guillemets(saisie))
+
+### FIN DE LA PARITE 1
