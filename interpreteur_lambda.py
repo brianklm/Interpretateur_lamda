@@ -1,6 +1,8 @@
 import sys
 from pprint import pprint
 
+### PARTIE 1 : LEXEUR ET PARSEUR
+
 LAMBDA = 'LAMBDA'
 POINT = 'POINT'
 ESPACE = 'ESPACE'
@@ -217,3 +219,5 @@ if __name__ == "__main__":
             if saisie == "":
                 break
             traiter(enlever_guillemets(saisie))
+
+### FIN DE LA PARITE 1
