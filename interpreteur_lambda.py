@@ -198,7 +198,9 @@ def parenthese(arbre):
         return f"(λ{arbre[1]}.{parenthese(arbre[2])})"
     return f"({parenthese(arbre[1])} {parenthese(arbre[2])})"
 
+# fin de la partie 1 : lexeur et parseur
 
+# Partie 2 : 
 
 # Bêta-réductions
 
@@ -348,6 +350,11 @@ def _equivalent(a, b, liees_a, liees_b, profondeur):
     return (_equivalent(a[1], b[1], liees_a, liees_b, profondeur)
             and _equivalent(a[2], b[2], liees_a, liees_b, profondeur))
 
+# Fin de la partie 2 : bêta-réductions
+
+
+
+# Partie 1 : suite
 
 def traiter(s):
     try:
