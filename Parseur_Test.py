@@ -11,6 +11,8 @@ TERMES = [
     ("T6", "/z./x.(x./y) z ",        ERREUR),
     ("T7", "(/x./y) ((/x.(/z.y)) z x)) ", ERREUR),
     ("T8", " (/y./x.yx) (/z.y x)", ERREUR),
+    ("T9",  "x y z",                "((x y) z)"),
+    ("T10", "/x.x y",               "(λx.(x y))"),
 
 ]
 
